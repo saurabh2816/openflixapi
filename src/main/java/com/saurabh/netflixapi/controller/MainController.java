@@ -8,11 +8,12 @@ import com.saurabh.netflixapi.service.OmdbAPIService;
 import com.saurabh.netflixapi.model.Node;
 import com.saurabh.netflixapi.service.JSoupService;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,22 +27,37 @@ public class MainController {
 
 
     @Autowired
-    private final JSoupService JSoupService;
+    private final JSoupService jSoupService;
 
     private final OmdbAPIService omdbAPIService;
     private final MovieService movieService;
     private Map<String, String> myMap;
 
-    public MainController(JSoupService JSoupService, OmdbAPIService omdbAPIService, MovieService movieService) {
-        this.JSoupService = JSoupService;
+    public MainController(JSoupService jSoupService, OmdbAPIService omdbAPIService, MovieService movieService) {
+        this.jSoupService = jSoupService;
         this.omdbAPIService = omdbAPIService;
         this.movieService = movieService;
     }
 
+    @GetMapping("/anchors")
+    public List<Element> getAnchorTags() throws IOException {
+        String url = "https://sv3.hivamovie.com/new/Movie/";
+        return jSoupService.getAnchorTags(url);
+    }
+
+
+    @GetMapping("/getFolderLinksFromALink")
+    public List<String> getFolderLinksFromALink() throws IOException {
+        String url = "https://sv3.hivamovie.com/new/Movie/";
+        return jSoupService.getFolderLinksFromALink(url);
+    }
+
+
+
     @GetMapping("/saveAllMoviesFromALink")
     public ResponseEntity<List<Movie>> getListOfNodesFromOneLink() {
 
-        List<Node> res = JSoupService.getListOfNodesFromLink();
+        List<Node> res = jSoupService.getListOfNodesFromLink();
 
         List<Movie> movieList = new ArrayList<>();
         for (Node node : res) {
