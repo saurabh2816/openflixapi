@@ -66,9 +66,9 @@ public class MainController {
 
     @GetMapping("/getAll")
     public ResponseEntity<List<Movie>> getAllMovies() {
-
         List<Movie> res = movieService.getAllMovies();
         return ResponseEntity.ok(res);
+
 
     }
 
@@ -111,7 +111,7 @@ public class MainController {
     @GetMapping("/fun")
     public ResponseEntity<String> newendpoint() {
 
-        String res = "saurabh and ronak";
+        String res = "saurabh and ronak!";
         return ResponseEntity.ok(res);
 
     }
