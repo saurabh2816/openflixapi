@@ -39,6 +39,7 @@ public class MainController {
         this.movieService = movieService;
     }
 
+
     @GetMapping("/anchors")
     public List<Element> getAnchorTags() throws IOException {
         String url = "https://sv3.hivamovie.com/new/Movie/";
@@ -55,13 +56,13 @@ public class MainController {
 
 
     @GetMapping("/saveAllMoviesFromALink")
-    public ResponseEntity<List<Movie>> getListOfNodesFromOneLink() {
+    public ResponseEntity<List<Movie>> getListOfNodesFromOneLink() throws IOException {
 
         List<Node> res = jSoupService.getListOfNodesFromLink();
 
         List<Movie> movieList = new ArrayList<>();
         for (Node node : res) {
-            if (node.getRawMovieName().contains(".mp4") && !node.getMovieName().isEmpty()) { // TODO: Add support for more media types
+            if (!node.getMovieName().isEmpty()) {
 
                 Movie movie = omdbAPIService.getMovieByTitle(node);
 
@@ -84,8 +85,13 @@ public class MainController {
     public ResponseEntity<List<Movie>> getAllMovies() {
         List<Movie> res = movieService.getAllMovies();
         return ResponseEntity.ok(res);
+    }
 
-
+    // create a get mapping to get movies with Resolution of 1080p
+    @GetMapping("/movies/1080p")
+    public ResponseEntity<List<Movie>> getMoviesWith1080p() {
+        List<Movie> res = movieService.getMoviesWith1080p();
+        return ResponseEntity.ok(res);
     }
 
 

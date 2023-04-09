@@ -58,62 +58,16 @@ public class OmdbAPIService {
 
     public Movie getMovieByTitle(Node node) {
 
-        String title = node.getMovieName();
-
-        Optional<Movie> movie = movieRepository.findByTitle(title);
-
-        if(movie.isPresent()) {
-            return movie.get();
-        }
-
         ImdbMovie res = webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("apikey", API_KEY)
-                        .queryParam("t", title)
+                        .queryParam("t", node.getMovieName())
+                        .queryParam("y", node.getYear())
                         .build())
                 .retrieve()
                 .bodyToMono(ImdbMovie.class)
                 .block();
 
-        // check for poster availability before saving
-
-//        Mono<String> monoHttpStatus = posterAvailabilityCheckClient.get()
-//                .uri(res.getPoster())
-//                .exchange()
-//                .flatMap(clientResponse -> clientResponse.bodyToMono(String.class));
-
-//        Mono<Void> status = posterAvailabilityCheckClient.get()
-//                .uri(res.getPoster())
-//                .retrieve()
-//                .onStatus(HttpStatus::isError, response ->  Mono.error(new NetflixException(HttpStatus.INTERNAL_SERVER_ERROR, "sfgdfg")))
-//                .bodyToMono(Void.class);
-
-
-//        Mono<ClientResponse> clientResponse = WebClient.builder().build()
-//                .get().uri(res.getPoster())
-//                .exchange();
-//
-//        HttpStatus scode;
-//        clientResponse.subscribe((response) -> {
-//
-//            HttpStatus statusCode = response.statusCode();
-//
-//            Mono<String> bodyToMono = response.bodyToMono(String.class);
-//            // the second subscribe to access the body
-//            bodyToMono.subscribe((body) -> {
-//
-//                System.out.println("stausCode:" + statusCode);
-//
-//            }, (ex) -> {
-//                // handle error
-//            });
-//        }, (ex) -> {
-//            // handle network error
-//        });
-
-
-        // res could be null if there doesn't exist a movie with that name
-        // use cases include: movie title missing apostrophes, error in extracting the movie name from the link etc.
 
         if(res.getTitle()==null) return Movie.builder().build();
 
@@ -145,10 +99,11 @@ public class OmdbAPIService {
                     .released(res.getReleased())
                     .year(res.getYear())
                     .released(res.getReleased())
-
+                    .extension(node.getType())
+                    .resolution(node.getResolution())
                     // data from node movielink and srtLink
                     .link(node.getLink())
-                    .srtLink(node.getStrLink())
+//                    .srtLink(node.getStrLink())
 
                     .build());
 

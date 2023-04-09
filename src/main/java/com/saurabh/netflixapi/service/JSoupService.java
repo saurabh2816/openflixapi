@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -35,10 +34,6 @@ public class JSoupService {
         return new ArrayList<>(anchorTags);
     }
 
-
-
-    // generate docs for the function below
-
     public List<String> getFolderLinksFromALink(String url) throws IOException {
         Document doc = Jsoup.connect(url).get();
         Elements links = doc.select("a[href]");
@@ -57,13 +52,20 @@ public class JSoupService {
         return resultList;
     }
 
-    public List<Node> getListOfNodesFromLink() {
+    public List<Node> getListOfNodesFromLink() throws IOException {
         String url = "https://sv3.hivamovie.com/new/Movie/";
-        String[] batches = new String[] {""};
+        var folderLinks = getFolderLinksFromALink(url);
+
+        String[] batches = new String[folderLinks.size()];
+
+        for (int i = 0; i < folderLinks.size(); i++) {
+            batches[i] = folderLinks.get(i);
+        }
+
         List<Node> resultList = new ArrayList<>();
 
         for (String batchName: batches) {
-            Document doc = getDocument(url + batchName);
+            Document doc = getDocument( batchName);
             if (doc != null) {
                 Elements links = doc.select("a[href]");
                 addNodesFromLinks(links, resultList);
@@ -90,10 +92,29 @@ public class JSoupService {
             while (matcher.find()) {
                 String rawFileName = matcher.group(0);
                 String movieName = matcher.group(1).replace(".", " ");
-                if (rawFileName.contains("srt")) {
-                    addSubtitleToPreviousMovie(movieName, link, resultList);
-                } else {
-                    addNewMovieNode(rawFileName, movieName, link, resultList);
+
+                String rawStringAfterMovieName = matcher.group(2);
+                String[] split = rawStringAfterMovieName.split("\\.");
+                String movieYear = "";
+                String movieResolution = "";
+                String movieType = "";
+
+                for (String s : split) {
+                    if (s.matches("[0-9]{4}")) {
+                        int year = Integer.parseInt(s);
+                        if (year >= 1950 && year <= 2025) {
+                            movieYear = s;
+                        }
+                    } else if (s.matches("[0-9]{3,4}p")) {
+                        movieResolution = s;
+                    } else if (split.length > 0) {
+                        movieType = split[split.length - 1];
+                    }
+                }
+
+                // ignore subtitles and trailer
+                if( (movieType.equals("mp4") || movieType.equals("mkv")) && !rawFileName.contains("trailer") && !rawFileName.contains("Trailer") && !rawFileName.contains("sample") && !movieType.contains("sub") && !rawFileName.contains("srt")) {
+                    addNewMovieNode(rawFileName, movieName, link, movieYear, movieResolution, movieType, resultList);
                 }
             }
         }
@@ -122,15 +143,17 @@ public class JSoupService {
         }
     }
 
-    private void addNewMovieNode(String rawFileName, String movieName, Element link, List<Node> resultList) {
+    private void addNewMovieNode(String rawFileName, String movieName, Element link, String movieYear, String movieResolution, String movieType, List<Node> resultList) {
         Node node = Node.builder()
                 .rawMovieName(rawFileName)
                 .movieName(movieName)
                 .text(link.text())
                 .link(link.baseUri() + link.attr("href"))
+                .resolution(movieResolution)
+                .year(movieYear)
+                .type(movieType)
                 .build();
         resultList.add(node);
     }
-
 
 }
