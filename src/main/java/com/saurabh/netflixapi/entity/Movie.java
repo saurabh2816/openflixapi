@@ -19,6 +19,9 @@ public class Movie {
     @GeneratedValue(strategy= GenerationType.AUTO)
     private Long id;
 
+    private String extension;
+
+    private String resolution;
     private String srtLink;
     private String link;
     private String imdbId;

@@ -55,6 +55,14 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.silentsoft</groupId>
+			<artifactId>pushbullet-api</artifactId>
+			<version>0.1.1</version>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>

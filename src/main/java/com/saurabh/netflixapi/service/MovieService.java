@@ -2,6 +2,7 @@ package com.saurabh.netflixapi.service;
 
 import com.saurabh.netflixapi.entity.Movie;
 import com.saurabh.netflixapi.repository.MovieRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,4 +21,7 @@ public class MovieService {
     }
 
 
+    public List<Movie> getMoviesWith1080p() {
+        return this.movieRepository.findByResolution("1080p");
+    }
 }

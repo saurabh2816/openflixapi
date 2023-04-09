@@ -14,4 +14,8 @@ public class Node {
     private String link;
     private String strLink;
 
+    private String year;
+    private String type;
+    private String resolution;
+
 }
