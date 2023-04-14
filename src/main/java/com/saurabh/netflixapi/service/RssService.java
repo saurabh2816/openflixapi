@@ -5,6 +5,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -29,6 +31,29 @@ public class RssService {
             JSONObject item = items.getJSONObject(i);
             String title = item.getString("title");
             topStories.add(title);
+        }
+        return topStories;
+    }
+
+    public List<String> getTopStories1() throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(RSS_URL).build();
+        Response response = client.newCall(request).execute();
+        String rssXml = response.body().string();
+
+        RssToJsonConverter converter = new Rss2Json.Builder().build();
+        String rssJson = converter.convert(rssXml);
+
+        Document document;
+        List<String> topStories = new ArrayList<>();
+        JSONObject rssObject = new JSONObject(rssJson);
+        JSONArray items = rssObject.getJSONArray("items");
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+            String link = item.getString("link");
+            document = Jsoup.connect(link).get();
+            String content = document.text();
+            topStories.add(content);
         }
         return topStories;
     }

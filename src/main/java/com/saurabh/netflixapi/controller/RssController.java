@@ -25,7 +25,7 @@ public class RssController {
 
     @GetMapping("/top-stories")
     public List<String> getTopStories() throws IOException {
-        return rssService.getTopStories();
+        return rssService.getTopStoriesWithContent();
     }
 
 }
