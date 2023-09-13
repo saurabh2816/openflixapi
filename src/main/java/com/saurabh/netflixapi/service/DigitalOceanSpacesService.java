@@ -8,10 +8,12 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.saurabh.netflixapi.DTO.S3FileDTO;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 @Service
@@ -69,8 +71,8 @@ public class DigitalOceanSpacesService {
         s3Client.setBucketPolicy(bucketName, policyJson);
     }
 
-    public List<S3ObjectSummary> listFilesInFolder(String folderName) {
-        List<S3ObjectSummary> summaries = new ArrayList<>();
+    public List<S3FileDTO> listFilesInFolder(String folderName) {
+        List<S3FileDTO> summaries = new ArrayList<>();
         ObjectListing objectListing;
 
         String prefix = folderName.endsWith("/") ? folderName : folderName + "/";
@@ -81,18 +83,18 @@ public class DigitalOceanSpacesService {
                     .withPrefix(prefix));
 
             for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
+
                 // Exclude the placeholder object for the folder
                 if (!summary.getKey().equals(prefix)) {
-                    summaries.add(summary);
+                    URL fileUrl = s3Client.getUrl(bucketName, summary.getKey());
+                    S3FileDTO s3FileDTO = new S3FileDTO(summary, fileUrl);
+                    summaries.add(s3FileDTO);
                 }
             }
 
             String nextMarker = objectListing.getNextMarker();
             objectListing.setMarker(nextMarker);
         } while (objectListing.isTruncated());
-
-        // extract file names from the summaries
-        summaries.forEach(s -> System.out.println(s.getKey()));
 
 
         return summaries;
