@@ -5,11 +5,14 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 @Service
 public class DigitalOceanSpacesService {
@@ -26,33 +29,75 @@ public class DigitalOceanSpacesService {
     @Value("${digitalocean.endpoint}")
     private String endpoint;
 
+    private AmazonS3 s3Client;
+
     @Value("${digitalocean.bucketName}")
     private String bucketName;
 
-    public List<S3ObjectSummary> listFiles() {
-        BasicAWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
-        AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(creds))
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region))
-                .build();
+    @PostConstruct
+    public void init() {
+        try {
+            // Initialize the S3 client once after bean properties are set
+            BasicAWSCredentials creds = new BasicAWSCredentials(accessKey, secretKey);
+            s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new AWSStaticCredentialsProvider(creds))
+                    .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, region))
+                    .build();
 
-        ObjectListing objectListing = s3Client.listObjects(bucketName);
-        return objectListing.getObjectSummaries();
+            // Set the bucket policy once during initialization
+            setBucketPolicy();
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Optionally, log the error for further diagnosis
+            // logger.error("Error initializing S3Service", e);
+        }
     }
-//
-//    DigitalOcean apiClient = new DigitalOceanClient("dop_v1_22b1161a10c0ae486327992dd9c07b5d9f109bae0551f7a6595522cc3612b340");
-//
-//    Droplets droplets;
-//
-//    {
-//        try {
-//            droplets = apiClient.getAvailableDroplets(1, 1);
-//        } catch (DigitalOceanException e) {
-//            throw new RuntimeException(e);
-//        } catch (RequestUnsuccessfulException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+
+    private void setBucketPolicy() {
+        String policyJson = "{"
+                + "\"Version\":\"2012-10-17\","
+                + "\"Statement\":["
+                + "{"
+                + "\"Effect\":\"Allow\","
+                + "\"Principal\":\"*\","
+                + "\"Action\":\"s3:GetObject\","
+                + "\"Resource\":\"arn:aws:s3:::" + bucketName + "/Movies/*\""
+                + "}"
+                + "]"
+                + "}";
+
+        s3Client.setBucketPolicy(bucketName, policyJson);
+    }
+
+    public List<S3ObjectSummary> listFilesInFolder(String folderName) {
+        List<S3ObjectSummary> summaries = new ArrayList<>();
+        ObjectListing objectListing;
+
+        String prefix = folderName.endsWith("/") ? folderName : folderName + "/";
+
+        do {
+            objectListing = s3Client.listObjects(new ListObjectsRequest()
+                    .withBucketName(bucketName)
+                    .withPrefix(prefix));
+
+            for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
+                // Exclude the placeholder object for the folder
+                if (!summary.getKey().equals(prefix)) {
+                    summaries.add(summary);
+                }
+            }
+
+            String nextMarker = objectListing.getNextMarker();
+            objectListing.setMarker(nextMarker);
+        } while (objectListing.isTruncated());
+
+        // extract file names from the summaries
+        summaries.forEach(s -> System.out.println(s.getKey()));
+
+
+        return summaries;
+    }
+
 
 }
 

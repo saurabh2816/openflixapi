@@ -27,14 +27,14 @@ public class DigitalOceanController {
 
     @GetMapping("/files")
     public List<S3ObjectSummary> listFiles() {
-        return digitalOceanSpacesService.listFiles();
+        return digitalOceanSpacesService.listFilesInFolder("Movies");
     }
 
     @GetMapping("/saveVisitedFiles")
     public List<S3Files> saveVisitedFiles() {
 
         // get files from S3
-        List<S3ObjectSummary> files = digitalOceanSpacesService.listFiles();
+        List<S3ObjectSummary> files = digitalOceanSpacesService.listFilesInFolder("Movies");
         List<S3Files> res = new ArrayList<>();
 
         files.forEach( file -> {
