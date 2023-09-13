@@ -9,13 +9,21 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.saurabh.netflixapi.DTO.S3FileDTO;
+import com.saurabh.netflixapi.model.Node;
 import jakarta.annotation.PostConstruct;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Service
 public class DigitalOceanSpacesService {
 
@@ -97,9 +105,85 @@ public class DigitalOceanSpacesService {
         } while (objectListing.isTruncated());
 
 
+        // get List<Node> from the summaries
+        List<Node> resultList = new ArrayList<>();
+        for(var summary: summaries) {
+            addNodesFromLinks(summary.getEncodedUrl().toString(), resultList);
+        }
         return summaries;
     }
 
+
+    private void addNodesFromLinks(String url, List<Node> resultList) {
+            String decodedUrl = decodeUrl(url);
+            Matcher matcher = getMatcher(decodedUrl);
+
+            while (matcher.find()) {
+                String rawFileName = matcher.group(0);
+                String movieName = matcher.group(1).replace(".", " ");
+
+                String rawStringAfterMovieName = matcher.group(2);
+                String[] split = rawStringAfterMovieName.split("\\.");
+                String movieYear = "";
+                String movieResolution = "";
+                String movieType = "";
+
+                for (String s : split) {
+                    if (s.matches("[0-9]{4}")) {
+                        int year = Integer.parseInt(s);
+                        if (year >= 1950 && year <= 2025) {
+                            movieYear = s;
+                        }
+                    } else if (s.matches("[0-9]{3,4}p")) {
+                        movieResolution = s;
+                    } else if (split.length > 0) {
+                        movieType = split[split.length - 1];
+                    }
+                }
+
+                // ignore subtitles and trailer
+                if( (movieType.equals("mp4") || movieType.equals("mkv")) && !rawFileName.contains("trailer") && !rawFileName.contains("Trailer") && !rawFileName.contains("sample") && !movieType.contains("sub") && !rawFileName.contains("srt")) {
+                    addNewMovieNode(rawFileName, movieName, url, movieYear, movieResolution, movieType, resultList);
+                }
+            }
+
+    }
+
+    private String decodeUrl(String url) {
+        String decodedUrl = "";
+        try {
+            decodedUrl = URLDecoder.decode(url, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return decodedUrl;
+    }
+
+    private Matcher getMatcher(String decodedUrl) {
+        String regex = "([\\.\\w']+?)(\\.[0-9]{4}\\..*)";
+        Pattern pattern = Pattern.compile(regex);
+        return pattern.matcher(decodedUrl);
+    }
+
+    private void addSubtitleToPreviousMovie(String movieName, Element link, List<Node> resultList) {
+        if (!resultList.isEmpty() && resultList.get(resultList.size() - 1).getMovieName().equals(movieName)) {
+            Node previousMovie = resultList.get(resultList.size() - 1);
+            previousMovie.setStrLink(link.baseUri() + link.attr("href"));
+        }
+    }
+
+    private void addNewMovieNode(String rawFileName, String movieName, String url, String movieYear, String movieResolution, String movieType, List<Node> resultList) {
+        Node node = Node.builder()
+                .rawMovieName(rawFileName)
+                .movieName(movieName)
+//                .text(link.text())
+                .link(url)
+                .resolution(movieResolution)
+                .year(movieYear)
+                .type(movieType)
+                .build();
+        resultList.add(node);
+    }
 
 }
 
