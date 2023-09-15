@@ -9,11 +9,14 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.saurabh.netflixapi.DTO.S3FileDTO;
+import com.saurabh.netflixapi.entity.Movie;
+import com.saurabh.netflixapi.entity.Movies;
 import com.saurabh.netflixapi.model.Node;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
@@ -25,6 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
+@Slf4j
 public class DigitalOceanSpacesService {
 
     @Value("${digitalocean.accessKey}")
@@ -43,6 +47,13 @@ public class DigitalOceanSpacesService {
 
     @Value("${digitalocean.bucketName}")
     private String bucketName;
+
+
+    private final OmdbAPIService omdbAPIService;
+
+    public DigitalOceanSpacesService(OmdbAPIService omdbAPIService) {
+        this.omdbAPIService = omdbAPIService;
+    }
 
     @PostConstruct
     public void init() {
@@ -110,7 +121,32 @@ public class DigitalOceanSpacesService {
         for(var summary: summaries) {
             addNodesFromLinks(summary.getEncodedUrl().toString(), resultList);
         }
+
+        saveMovies(resultList);
+
+
         return summaries;
+    }
+
+    private void saveMovies(List<Node> nodes) {
+        List<Movies> movieList = new ArrayList<>();
+        for (Node node : nodes) {
+            if (!node.getMovieName().isEmpty()) {
+
+                Movies movie = omdbAPIService.saveToMoviesByTitle(node);
+
+
+                // why would imdb Id be nulgil? => maybe we don't have info for but that should be handled before inside the getMovieByTitle()
+                if (movie.getImdbId() != null) {
+                    movieList.add(movie);
+                    log.info("Movie: added to the list", movie);
+                } else {
+                    log.error("This node has some issue. Debug node to find out. New format hai boss!!");
+                }
+            }
+        }
+
+        System.out.print("ALl movies added");
     }
 
 

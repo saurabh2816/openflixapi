@@ -1,5 +1,6 @@
 package com.saurabh.netflixapi.controller;
 import com.saurabh.netflixapi.entity.Movie;
+import com.saurabh.netflixapi.entity.Movies;
 import com.saurabh.netflixapi.model.ImdbMovie;
 import com.saurabh.netflixapi.model.OmdbSearchResults;
 import com.saurabh.netflixapi.service.MovieService;
@@ -8,18 +9,12 @@ import com.saurabh.netflixapi.service.OmdbAPIService;
 import com.saurabh.netflixapi.model.Node;
 import com.saurabh.netflixapi.service.JSoupService;
 import lombok.extern.slf4j.Slf4j;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -86,10 +81,15 @@ public class MainController {
 
     }
 
-
     @GetMapping("/getAll")
     public ResponseEntity<List<Movie>> getAllMovies() {
         List<Movie> res = movieService.getAllMovies();
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/getAllFromMovies")
+    public ResponseEntity<List<Movies>> getAll() {
+        List<Movies> res = movieService.getAllMoviesFromMovies();
         return ResponseEntity.ok(res);
     }
 

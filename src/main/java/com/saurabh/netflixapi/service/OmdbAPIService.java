@@ -1,11 +1,13 @@
 package com.saurabh.netflixapi.service;
 
 import com.saurabh.netflixapi.entity.Movie;
+import com.saurabh.netflixapi.entity.Movies;
 import com.saurabh.netflixapi.exception.NetflixException;
 import com.saurabh.netflixapi.model.ImdbMovie;
 import com.saurabh.netflixapi.model.Node;
 import com.saurabh.netflixapi.model.OmdbSearchResults;
 import com.saurabh.netflixapi.repository.MovieRepository;
+import com.saurabh.netflixapi.repository.MoviesRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
@@ -22,9 +24,11 @@ import java.util.Optional;
 public class OmdbAPIService {
 
     private MovieRepository movieRepository;
+    private MoviesRepository moviesRepository;
 
-    public OmdbAPIService(MovieRepository movieRepository) {
+    public OmdbAPIService(MovieRepository movieRepository, MoviesRepository moviesRepository) {
         this.movieRepository = movieRepository;
+        this.moviesRepository = moviesRepository;
     }
 
     private static final String API_KEY = "cd04853d";
@@ -123,6 +127,62 @@ public class OmdbAPIService {
                 .retrieve()
                 .bodyToMono(ImdbMovie.class)
                 .block();
+
+    }
+
+    public Movies saveToMoviesByTitle(Node node) {
+
+        ImdbMovie res = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .queryParam("apikey", API_KEY)
+                        .queryParam("t", node.getMovieName())
+                        .queryParam("y", node.getYear())
+                        .build())
+                .retrieve()
+                .bodyToMono(ImdbMovie.class)
+                .block();
+
+
+        if(res.getTitle()==null) return Movies.builder().build();
+
+        // save res to the movie table
+        Movies movieEntity = moviesRepository.save(Movies.builder()
+                .actors(res.getActors())
+                .awards(res.getAwards())
+                .boxOffice(res.getBoxOffice())
+                .country(res.getCountry())
+                .director(res.getDirector())
+                .dvd(res.getDvd())
+                .genre(res.getGenre())
+                .runtime(res.getRuntime())
+                .imdbId(res.getImdbId())
+                .imdbRating(res.getImdbRating())
+                .imdbVotes(res.getImdbVotes())
+                .language(res.getLanguage())
+                .metascore(res.getMetascore())
+                .plot(res.getPlot())
+                .poster(res.getPoster())
+                .production(res.getProduction())
+                .rated(res.getRated())
+//                  .ratings(res.getRatings())  -- we are not saving ratings
+                .response(res.getResponse())
+                .type(res.getType())
+                .website(res.getWebsite())
+                .writer(res.getWriter())
+                .title(res.getTitle())
+                .released(res.getReleased())
+                .year(res.getYear())
+                .released(res.getReleased())
+                .extension(node.getType())
+                .resolution(node.getResolution())
+                // data from node movielink and srtLink
+                .link(node.getLink())
+//                    .srtLink(node.getStrLink())
+
+                .build());
+
+
+        return movieEntity;
 
     }
 }
