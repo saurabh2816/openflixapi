@@ -1,5 +1,6 @@
 package com.saurabh.netflixapi.controller;
 import com.saurabh.netflixapi.entity.Movie;
+import com.saurabh.netflixapi.entity.Movies;
 import com.saurabh.netflixapi.model.ImdbMovie;
 import com.saurabh.netflixapi.model.OmdbSearchResults;
 import com.saurabh.netflixapi.service.MovieService;
@@ -80,10 +81,15 @@ public class MainController {
 
     }
 
-
     @GetMapping("/getAll")
     public ResponseEntity<List<Movie>> getAllMovies() {
         List<Movie> res = movieService.getAllMovies();
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/getAllFromMovies")
+    public ResponseEntity<List<Movies>> getAll() {
+        List<Movies> res = movieService.getAllMoviesFromMovies();
         return ResponseEntity.ok(res);
     }
 
@@ -117,11 +123,52 @@ public class MainController {
 
     }
 
-
-//    @GetMapping("/movies/bytitle/{title}")
-//    public ImdbMovieEntity getMovieByTitle(@PathVariable String title) {
 //
-//        return omdbAPIService.getMovieByTitle(title);
+//    @GetMapping("/test")
+//    public String getMovieByTitle() {
+//
+//        try {
+//            URL url = new URL("https://jsonmock.hackerrank.com/api/tvseries");
+//            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//            connection.setRequestMethod("GET");
+//            connection.setRequestProperty("Accept", "application/json");
+//
+//            if (connection.getResponseCode() != 200) {
+//                throw new RuntimeException("Failed : HTTP error code : " + connection.getResponseCode());
+//            }
+//
+//            BufferedReader br = new BufferedReader(new InputStreamReader((connection.getInputStream())));
+//            String output;
+//            StringBuilder response = new StringBuilder();
+//            while ((output = br.readLine()) != null) {
+//                response.append(output);
+//            }
+//            connection.disconnect();
+//
+//            JSONParser parser = new JSONParser();
+//            JSONObject json =(JSONObject) parser.parse(response.toString());
+//
+//            for (Series series : JSONObject.get("data")) {
+//                if (series.getGenre().equalsIgnoreCase(genre)) {
+//                    if (series.getImdbRating() > highestRating) {
+//                        highestRating = series.getImdbRating();
+//                        bestSeriesName = series.getName();
+//                    } else if (series.getImdbRating() == highestRating) {
+//                        bestSeriesName = series.getName().compareTo(bestSeriesName) < 0 ? series.getName() : bestSeriesName;
+//                    }
+//                }
+//            }
+//
+//            return bestSeriesName;
+//
+//            System.out.println("Parsed JSON using google/gson: " + json);
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//
+//        return "OK";
 //
 //    }
 
